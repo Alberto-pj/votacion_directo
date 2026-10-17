@@ -1,0 +1,15 @@
+# Solo Postgres para desarrollo local. La app se arranca con `npm run dev`.
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: poll
+      POSTGRES_PASSWORD: poll
+      POSTGRES_DB: poll
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

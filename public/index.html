@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vota</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body class="vote">
+  <main>
+    <span id="status" class="status"></span>
+    <h1 id="question">Conectando…</h1>
+    <div id="options" class="options"></div>
+    <div id="bars" class="bars"></div>
+    <p id="note" class="note"></p>
+  </main>
+
+  <script src="/live.js"></script>
+  <script>
+    // Id anónimo del votante, guardado en este navegador
+    let voterId = localStorage.getItem('voterId');
+    if (!voterId) {
+      voterId = crypto.randomUUID?.() ?? Math.random().toString(36).slice(2);
+      localStorage.setItem('voterId', voterId);
+    }
+
+    const $ = id => document.getElementById(id);
+    let shownPoll = null;
+
+    connectLive({ voter: voterId }, ({ poll, counts, total, myVote }) => {
+      if (!poll) {
+        $('question').textContent = 'Esperando a la siguiente encuesta…';
+        $('options').innerHTML = $('bars').innerHTML = $('note').textContent = '';
+        return;
+      }
+      $('question').textContent = poll.question;
+
+      const canVote = poll.status === 'active' && myVote === null;
+      if (canVote) {
+        // Botones de voto (solo se repintan si cambia la encuesta o se reinicia)
+        if (shownPoll !== poll.id || !$('options').children.length) {
+          $('options').innerHTML = '';
+          poll.options.forEach((option, i) => {
+            const button = document.createElement('button');
+            button.textContent = option;
+            button.onclick = () => vote(poll.id, i);
+            $('options').append(button);
+          });
+        }
+        $('bars').innerHTML = '';
+        delete $('bars').dataset.poll;
+        $('note').textContent = '';
+      } else {
+        $('options').innerHTML = '';
+        renderBars($('bars'), poll, counts, myVote);
+        const votes = `${total} ${total === 1 ? 'voto' : 'votos'}`;
+        $('note').textContent = poll.status === 'closed'
+          ? `Votación cerrada · ${votes}`
+          : `¡Gracias por votar! · ${votes}`;
+      }
+      shownPoll = poll.id;
+    });
+
+    async function vote(pollId, option) {
+      document.querySelectorAll('.options button').forEach(b => (b.disabled = true));
+      const res = await fetch('/api/vote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pollId, voterId, option }),
+      });
+      if (!res.ok) {
+        $('note').textContent = (await res.json()).error;
+        document.querySelectorAll('.options button').forEach(b => (b.disabled = false));
+      }
+      // Si va bien, no hacemos nada: el servidor nos enviará el nuevo estado por WebSocket
+    }
+  </script>
+</body>
+</html>

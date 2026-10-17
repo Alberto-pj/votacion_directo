@@ -1,0 +1,19 @@
+{
+  "name": "render-live-poll",
+  "version": "1.0.0",
+  "description": "Tablero de votación en tiempo real con WebSockets para demos de Render",
+  "main": "server.js",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch --env-file=.env server.js"
+  },
+  "engines": {
+    "node": ">=20.6"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "pg": "^8.16.0",
+    "ws": "^8.18.0"
+  }
+}

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body class="admin">
+  <main>
+    <h1>Admin <span id="status" class="status"></span></h1>
+
+    <label>Token de admin <input id="token" type="password" autocomplete="off"></label>
+
+    <form id="create">
+      <h2>Nueva encuesta</h2>
+      <input name="question" placeholder="Pregunta" required>
+      <textarea name="options" rows="6" placeholder="Una opción por línea (de 2 a 6)" required></textarea>
+      <button>Crear</button>
+    </form>
+
+    <h2>Encuestas</h2>
+    <p id="error" class="error"></p>
+    <ul id="polls"></ul>
+  </main>
+
+  <script src="/live.js"></script>
+  <script>
+    const $ = id => document.getElementById(id);
+    $('token').value = sessionStorage.getItem('adminToken') || '';
+    $('token').onchange = () => { sessionStorage.setItem('adminToken', $('token').value); load(); };
+
+    // Llamada a la API de admin con el token en la cabecera
+    async function api(path, body) {
+      const res = await fetch('/api/admin/polls' + path, {
+        method: body ? 'POST' : 'GET',
+        headers: { 'Content-Type': 'application/json', 'x-admin-token': $('token').value },
+        body: body && JSON.stringify(body),
+      });
+      const data = await res.json().catch(() => ({ error: `Error ${res.status}` }));
+      $('error').textContent = res.ok ? '' : data.error;
+      return res.ok ? data : null;
+    }
+
+    async function load() {
+      const polls = await api('');
+      if (!polls) return;
+      $('polls').innerHTML = '';
+      for (const p of polls) {
+        const li = document.createElement('li');
+        li.className = p.status;
+        li.innerHTML = `<div><strong></strong><small></small></div>
+          <span class="actions">
+            <button data-action="activate">Activar</button>
+            <button data-action="close">Cerrar</button>
+            <button data-action="reset">Reiniciar votos</button>
+          </span>`;
+        li.querySelector('strong').textContent = p.question;
+        li.querySelector('small').textContent = ` ${p.status} · ${p.votes} votos · ${p.options.join(' / ')}`;
+        li.querySelectorAll('button').forEach(b => {
+          b.onclick = async () => {
+            if (b.dataset.action === 'reset' && !confirm('¿Borrar todos los votos?')) return;
+            await api(`/${p.id}/${b.dataset.action}`, {});
+            load();
+          };
+        });
+        $('polls').append(li);
+      }
+    }
+
+    $('create').onsubmit = async e => {
+      e.preventDefault();
+      const form = e.target;
+      const ok = await api('', {
+        question: form.question.value,
+        options: form.options.value.split('\n'),
+      });
+      if (ok) { form.reset(); load(); }
+    };
+
+    // Cada cambio que llega por WebSocket (p. ej. un voto) refresca la lista
+    connectLive({ role: 'admin' }, load);
+  </script>
+</body>
+</html>

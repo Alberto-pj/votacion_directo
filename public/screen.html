@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Resultados en directo</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body class="screen" title="Doble clic: pantalla completa">
+  <main>
+    <h1 id="question">Conectando…</h1>
+    <div id="bars" class="bars"></div>
+  </main>
+  <aside>
+    <div id="qr"></div>
+    <p id="url"></p>
+    <div class="stat"><strong id="total">0</strong> votos</div>
+    <div class="stat"><strong id="online">0</strong> conectados</div>
+    <span id="status" class="status"></span>
+  </aside>
+
+  <script src="/live.js"></script>
+  <script>
+    const $ = id => document.getElementById(id);
+
+    // QR con la URL pública de la vista de votación
+    const voteUrl = location.origin + '/';
+    new QRCode($('qr'), { text: voteUrl, width: 240, height: 240 });
+    $('url').textContent = location.host;
+
+    connectLive({ role: 'screen' }, ({ poll, counts, total, online }) => {
+      $('online').textContent = online;
+      $('total').textContent = total;
+      if (!poll) {
+        $('question').textContent = 'Escanea el QR para participar';
+        $('bars').innerHTML = '';
+        delete $('bars').dataset.poll;
+        return;
+      }
+      $('question').textContent = poll.question + (poll.status === 'closed' ? ' (cerrada)' : '');
+      renderBars($('bars'), poll, counts);
+    });
+
+    // Doble clic para pantalla completa
+    document.body.ondblclick = () =>
+      document.fullscreenElement ? document.exitFullscreen() : document.body.requestFullscreen();
+  </script>
+</body>
+</html>

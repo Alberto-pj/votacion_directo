@@ -1,0 +1,25 @@
+# Blueprint de Render: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: live-poll
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /healthz
+    autoDeployTrigger: commit # redeploy en cada push a la rama conectada
+    # Una sola instancia: el estado de los WebSockets vive en memoria (ver server.js)
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: live-poll-db
+          property: connectionString # URL interna, sin salir a internet
+      - key: ADMIN_TOKEN
+        generateValue: true # Render genera un valor aleatorio
+
+databases:
+  - name: live-poll-db
+    plan: free
+    databaseName: live_poll
+    user: live_poll
+    ipAllowList: [] # solo accesible desde servicios de Render
