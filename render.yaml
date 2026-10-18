@@ -3,6 +3,7 @@ services:
   - type: web
     name: votacion_directo
     runtime: node
+    region: frankfurt
     plan: free
     buildCommand: npm ci
     startCommand: npm start
@@ -19,6 +20,7 @@ services:
 
 databases:
   - name: votacion_directo-db
+    region: frankfurt
     plan: free
     databaseName: votacion_directo
     user: votacion_directo
