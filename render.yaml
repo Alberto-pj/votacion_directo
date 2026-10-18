@@ -1,7 +1,7 @@
 # Blueprint de Render: https://render.com/docs/blueprint-spec
 services:
   - type: web
-    name: live-poll
+    name: votacion_directo
     runtime: node
     plan: free
     buildCommand: npm ci
@@ -12,14 +12,14 @@ services:
     envVars:
       - key: DATABASE_URL
         fromDatabase:
-          name: live-poll-db
+          name: votacion_directo-db
           property: connectionString # URL interna, sin salir a internet
       - key: ADMIN_TOKEN
         generateValue: true # Render genera un valor aleatorio
 
 databases:
-  - name: live-poll-db
+  - name: votacion_directo-db
     plan: free
-    databaseName: live_poll
-    user: live_poll
+    databaseName: votacion_directo
+    user: votacion_directo
     ipAllowList: [] # solo accesible desde servicios de Render
